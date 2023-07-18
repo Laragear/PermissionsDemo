@@ -22,6 +22,7 @@ if ($user->permission('delete post')->isDenied()) {
 
 * PHP 8.0 or later
 * Laravel 9, 10 or later
+* Cache compatible with [Atomic Locks](https://laravel.com/docs/10.x/cache#atomic-locks) (`file`, `redis`, `database`, `array`...)
 
 ## Installation
 
@@ -508,7 +509,8 @@ return [
     'cache' => [
         'store' => env('PERMISSIONS_CACHE_STORE'),
         'prefix' => 'permissions',
-        'ttl' => 60 * 60
+        'ttl' => 60 * 60,
+        'lock' => 5
     ],
 ];
 ```
@@ -520,7 +522,8 @@ return [
     'cache' => [
         'store' => env('PERMISSIONS_CACHE_STORE'),
         'prefix' => 'permissions',
-        'ttl' => 60 * 60
+        'ttl' => 60 * 60,
+        'lock' => 3
     ],
 ];
 ```
@@ -528,6 +531,8 @@ return [
 The permissions are saved into the cache to avoid querying the database every time this data every time its requested. This control which cache store is used and how.
 
 By default, if the store is `null` or empty, it will use the application default, which is `file` out of the box. The `prefix` controls the string prefix to store the authorization data. The `ttl` key is how much it should be kept on the cache, being `null` forever.
+
+The `lock` manages how much time the lock should be acquired, and waited for. All authorization operations are atomic, which avoids data races when they happen.
 
 ## Migration Configuration
 
@@ -559,7 +564,7 @@ protected function createAdditionalColumns(Blueprint $table): void
 {
     $table->boolean('has_all_access')->default(false);
 }
-```
+``` 
 
 ## Laravel Octane compatibility
 
