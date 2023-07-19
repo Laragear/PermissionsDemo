@@ -174,11 +174,23 @@ $user = User::query()->where('name', 'Melissa')->first();
 $user->role('cashier')->detach();
 ```
 
+### Clearing roles
+
+Alternatively, you can always start from scratch and remove all roles with the `clearRoles()` method.
+
+```php
+use App\Models\User;
+
+$user = User::query()->where('name', 'Melissa')->first();
+
+$user->clearRoles();
+```
+
 ### Granting permissions
 
 > **Warning**
 > 
-> Attaching and detaching Roles is much better than assigning Permissions directly to a User, and is the recommended way to handle authorization. 
+> Attaching and detaching Roles is much better than assigning Permissions directly to a User, and is the recommended ways to handle authorization. 
 
 You may add dynamically single permissions to a user, regardless of the role they have. Simply use `grant()` on the permission you want to attach.
 
@@ -192,37 +204,17 @@ $user = User::query()->where('name', 'Melissa')->first();
 $user->permission('manage inventory')->grant();
 ```
 
-Explicit permissions take precedence over roles, and will remain attached even if a role with the same permissions is detached or attached.
-
-For example, imagine we grant `manage inventory` to Pedro, when is `inventory clerk` already grants him. The permission will be attached anyway.
-
-```php
-use App\Models\User;
-
-$user = User::query()->where('name', 'Pedro')->first();
-
-$user->permission('manage inventory')->grant();
-```
-
-If we remove the `inventory clerk`, all the role permissions will be removed, but the `manage inventory` permission will remain, so we will need to detach it after.
-
-```php
-use App\Models\User;
-
-$user = User::query()->where('name', 'Pedro')->first();
-
-$user->permission('manage inventory')->detach();
-```
+Granting permissions explicitly will take precedence over roles permissions, and will remain attached even if a role containing the same permission is detached or attached.
 
 ### Denying permissions
 
 > **Warning**
 >
-> Attaching and detaching Roles is much better than assigning Permissions directly to a User, and is the recommended way to handle authorization.
+> Attaching and detaching Roles is much better than assigning Permissions directly to a User, and is the recommended ways to handle authorization.
 
 Sometimes you will need to _deny_ a permission to a user, even if the role they have already grants him that particular permission. Instead of creating a new role specifically for that user, you can just _deny_ that permission using `deny()`.
 
-Let's deny Melissa's permission to manage the inventory, as Pedro already has done everything.
+Let's deny Melissa's permission to manage the inventory, as Pedro already has done everything for the day.
 
 ```php
 use App\Models\User;
@@ -232,11 +224,13 @@ $user = User::query()->where('name', 'Melissa')->first();
 $user->permission('manage inventory')->deny();
 ```
 
+Denying permissions explicitly will take precedence over roles permissions, and will remain attached even if a role containing the same permission is detached or attached.
+
 ### Detaching permissions
 
-When permissions are granted or denied explicitly for a given user, removing/adding a role won't modify these permissions, as explicit permissions always have precedence.
+When permissions are granted or denied explicitly for a given user, attaching or detaching a role won't modify these permissions. In other words, granting or denying permissions explicitly will always have precedence.
 
-To remove an explicit permission, you can use `detach()` on the permission names.
+To remove a permission, you can use `detach()` on the permission names.
 
 ```php
 use App\Models\User;
@@ -294,9 +288,9 @@ if ($user->permission('create product', 'update product')->isDenied()) {
 }
 ```
 
-### Checking Roles
+## Checking Roles
 
-Most of the time you will be checking Permissions directly instead of Roles, but some rare occasions you will need to do the latter, for example, to grant all-access to a given role. In these scenarios, use the `role()` method with `isGranted()` and `isDenied()` methods.
+Most of the time you will be checking Permissions directly instead of Roles, but you may find yourself in some rare occasions where you will need to do the latter, for example, to grant all-access to a given role. In these scenarios, use the `role()` method with `isGranted()` and `isDenied()` methods.
 
 For example, if the User has the role of `manager`, it will be able to view the administration dashboard.
 
@@ -312,14 +306,20 @@ if ($user->role('manager')->isGranted()) {
 return 'You are not the manager!';
 ``` 
 
-### Listing all permissions
+### Listing roles and permissions
 
-You can get all the computed (effective) permissions as a [Collection](https://laravel.com/docs/10.x/collections) for a given user using `listPermissions()`. 
+You can get all the roles assigned to a user using the `listRoles()` method as a [Collection](https://laravel.com/docs/10.x/collections), and all the computed (effective) permissions for a given user using `listPermissions()`. 
 
 ```php
 use App\Models\User;
 
 $user = User::query()->where('name', 'Melissa')->first();
+
+$roles = $user->listRoles();
+
+// Collection([
+//     'cashier',
+// ])
 
 $permissions = $user->listPermissions();
 
@@ -330,6 +330,32 @@ $permissions = $user->listPermissions();
 //     'manage inventory',
 //     'modify orders',
 //     'manage inventory',
+// ])
+```
+
+If you need a detailed list of the roles and permissions the user has, use `listRolesAndPermissions()` method. 
+
+This useful method returns a Collections of roles, each with its permissions, a list of explicitly granted permissions and denied ones, which is great to use when showing the data on your application graphical interface. 
+
+```php
+use App\Models\User;
+
+$user = User::query()->where('name', 'Melissa')->first();
+
+$roles = $user->listRolesAndPermissions();
+
+// Collection([
+//     'roles' => Collection([
+//         'cashier' => Collection([
+//             ...
+//          ]),
+//     ]),
+//     'permissions_granted' => Collection([
+//         ...
+//     ]),
+//     'permissions_denied' => Collection([
+//         ...
+//     ])
 // ])
 ```
 
