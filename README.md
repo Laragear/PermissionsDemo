@@ -20,8 +20,8 @@ if ($user->permission('delete post')->isDenied()) {
 
 ## Requirements
 
-* PHP 8.0 or later
-* Laravel 9, 10 or later
+* PHP 8.1 or later
+* Laravel 10 or later
 * Cache compatible with [Atomic Locks](https://laravel.com/docs/10.x/cache#atomic-locks) (`file`, `redis`, `database`, `array`...)
 
 ## Installation
@@ -453,24 +453,6 @@ DB::transaction(function () {
 })
 ```
 
-You can avoid this by linking the foreign column in the migration with `cascadeOnDelete()`, although this will only work on non-morph relations. Just simply add set the table name it will be linked, and the column name if it's not `id` already.
-
-For example, we can link the permissions to the `users` table:
-
-```php
-use Illuminate\Database\Migrations\Migration;
-
-return new class extends Migration
-{
-    protected array $cascadeOnDelete = [
-        'table' => 'users', 
-        'column' => 'id'
-    ];
-    
-    // ...
-}
-```
-
 ## Querying the Permissions directly
 
 You can still query the permissions relation directly in the database using the `Permissions` Eloquent Model.
@@ -509,14 +491,14 @@ $denied = $permissions->permissions_denied;
 
 The `Permission` model doesn't have any set relation to point to the user, because all access is done through your User model. You can use [Dynamic Relationships](https://laravel.com/docs/10.x/eloquent-relationships#dynamic-relationships) to set the inverse relation and get the users.
 
-The column name that links the target user with the Permission row is called `authorizable_id`, or plus `authorizable_type` if you're using morph relations. These are constants defined in the `Permission` model.
+The column names that links the target user with the Permission row are called `authorizable_id` and `authorizable_type`. These are constants defined in the `Permission` model.
 
 ```php
 use Laragear\Permissions\Models\Permission;
 use App\Models\Customer;
  
-Permission::resolveRelationUsing(
-    'customer', fn ($model) => $model->belongsTo(Customer::class, Permission::QUALIFIED_KEY_NAME);
+Permission::resolveRelationUsing('customer', function (Permission $model) {
+    return $model->morphTo(Customer::class, Permission::MORPH_NAME);
 });
 ```
 
@@ -560,37 +542,9 @@ By default, if the store is `null` or empty, it will use the application default
 
 The `lock` manages how much time the lock should be acquired, and waited for. All authorization operations are atomic, which avoids data races when they happen.
 
-## Migration Configuration
+## [Migration Configuration](https://github.com/sponsors/DarkGhostHunter/sponsorships?sponsor=DarkGhostHunter&tier_id=303801)
 
-The migration file you should have in your migrations folder contains three properties to easily change the relation.
-
-```php
-use Illuminate\Database\Migrations\Migration;
-
-return new class extends Migration
-{
-    protected bool $polymorphic = false;
-    protected string $primaryKeys = 'int';
-    protected array $cascadeOnDelete = ['table' => null, 'column' => 'id'];
-    
-    // ...
-}
-```
-
-The `$polymorphic` property determines if the `permissions` table should be linked to multiple models using a polymorphic column. The `$primaryKeys` sets the common primary key types for all the relations.
-
-When not using a polymorphic relation, the `$cascadeOnDelete` allows to create a foreign constraint to the user's table, so when a user is deleted the permission data is also deleted. You only need to add the table name, but if it's empty, it won't create it.
-
-Additionally, you have the `createAdditionalColumns()` method to create additional columns in the table if you need to.
-
-```php
-use Illuminate\Database\Schema\Blueprint;
-
-protected function createAdditionalColumns(Blueprint $table): void
-{
-    $table->boolean('has_all_access')->default(false);
-}
-``` 
+## [Upgrading](https://github.com/sponsors/DarkGhostHunter/sponsorships?sponsor=DarkGhostHunter&tier_id=303801)
 
 ## Laravel Octane compatibility
 
@@ -609,4 +563,4 @@ If you discover any security related issues, please email darkghosthunter@gmail.
 
 This specific package version is licensed under the terms of the [MIT License](LICENSE.md), at time of publishing.
 
-[Laravel](https://laravel.com) is a Trademark of [Taylor Otwell](https://github.com/TaylorOtwell/). Copyright © 2011-2023 Laravel LLC.
+[Laravel](https://laravel.com) is a Trademark of [Taylor Otwell](https://github.com/TaylorOtwell/). Copyright © 2011-2024 Laravel LLC.
