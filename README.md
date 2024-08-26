@@ -3,12 +3,12 @@
 A simple and performant Roles-Permissions system for Laravel.
 
 ```php
-if ($user->role('editor', 'admin')->isGranted()) {
-	return 'Only editors or admins can modify posts!';
-} 
-
 if ($user->permission('delete post')->isDenied()) {
     return 'Only admins can delete posts!';
+}
+
+if ($user->role('editor', 'admin')->isGranted()) {
+	return 'You can modify posts!';
 }
 ```
 
@@ -49,7 +49,7 @@ composer require laragear/permissions
 
 You will be prompted for a personal access token. If you don't have one, follow the instructions or [create one here](https://github.com/settings/tokens/new?scopes=repo). It takes just seconds.
 
-> **Info**
+> [!NOTE]
 > 
 > You can find more information about in [this article](https://darkghosthunter.medium.com/php-use-your-private-repository-in-composer-without-ssh-keys-da9541439f59).
 
@@ -140,7 +140,7 @@ Role::name('inventory clerk')->can([
 Role::name('manager')->basedOn('cashier', 'inventory clerk')->can('see finances');
 ```
 
-If there is a permission that I don't need, I can use the `except()` method filter out the permissions specified.
+If there is a permission that I don't need, I can use the `except()` method to filter out the permissions specified.
 
 ```php
 Role::name('manager')->from('cashier', 'inventory clerk')->can('see finances')->except('complete orders');
@@ -152,7 +152,7 @@ And that is the crash course on roles and permissions.
 
 ### Attaching Roles
 
-Once we have our Roles defined, the next step is attaching these Roles to a User. Use the `role()` method with the names of the roles, and then use `attach()` method.
+Once we have our Roles defined, the next step is attaching these Roles to a User. Use the `role()` method with the names of the roles, and then use `attach()` method. You can do this anywhere in your application.
 
 ```php
 use App\Models\User;
@@ -164,7 +164,7 @@ $user->role('cashier')->attach();
 
 ### Detaching Roles
 
-Detaching a role is easy as using `role()` with the name of the Roles to detach, and the `detach()` method.
+Detaching a role is easy as using `role()` method with the name of the Roles to detach, and the `detach()` method.
 
 ```php
 use App\Models\User;
@@ -188,9 +188,9 @@ $user->clearRoles();
 
 ### Granting permissions
 
-> **Warning**
+> [!WARNING]
 > 
-> Attaching and detaching Roles is much better than assigning Permissions directly to a User, and is the recommended ways to handle authorization. 
+> Attaching and detaching Roles is much better than assigning Permissions directly to a User, and is the recommended way to handle authorization. 
 
 You may add dynamically single permissions to a user, regardless of the role they have. Simply use `grant()` on the permission you want to attach.
 
@@ -204,11 +204,11 @@ $user = User::query()->where('name', 'Melissa')->first();
 $user->permission('manage inventory')->grant();
 ```
 
-Granting permissions explicitly will take precedence over roles permissions, and will remain attached even if a role containing the same permission is detached or attached.
+Granting permissions explicitly will take precedence over any role's permission, and will remain attached even if a role containing the same permission name is detached or attached.
 
 ### Denying permissions
 
-> **Warning**
+> [!WARNING]
 >
 > Attaching and detaching Roles is much better than assigning Permissions directly to a User, and is the recommended ways to handle authorization.
 
@@ -288,6 +288,20 @@ if ($user->permission('create product', 'update product')->isDenied()) {
 }
 ```
 
+You may also use the aliases `areGranted()`, `areDenied()`, `exists()` and `missing()` if it makes more sense in your code.
+
+```php
+// If the user has permissions to create a product, and update a product...
+if ($user->permission('update product', 'delete product')->areGranted()) {
+    return view('product.show', $product);
+}
+
+// If the user doesn't have permission to create a product, and update a product...
+if ($user->permission('create product', 'update product')->missing()) {
+    return 'You cannot manage products';
+}
+```
+
 ## Checking Roles
 
 Most of the time you will be checking Permissions directly instead of Roles, but you may find yourself in some rare occasions where you will need to do the latter, for example, to grant all-access to a given role. In these scenarios, use the `role()` method with `isGranted()` and `isDenied()` methods.
@@ -306,7 +320,7 @@ if ($user->role('manager')->isGranted()) {
 return 'You are not the manager!';
 ``` 
 
-### Listing roles and permissions
+## Listing roles and permissions
 
 You can get all the roles assigned to a user using the `listRoles()` method as a [Collection](https://laravel.com/docs/10.x/collections), and all the computed (effective) permissions for a given user using `listPermissions()`. 
 
@@ -400,6 +414,16 @@ if ($user->inTeam($team)->role('editor')->isDenied()) {
 }
 ```
 
+If you need to, you may also set the team name manually. For example, when you have different teams types for a given user.
+
+```php
+use App\Models\User;
+
+$user = User::query()->where('name', 'Melissa')->first();
+
+$user->inTeam('codingTeam:64')->role('editor')->attach();
+```
+
 ## Integrating with Laravel Authorization
 
 You may want to integrate permissions and roles with [Laravel Gates and Policies](https://laravel.com/docs/10.x/authorization). You can easily do it as long you have access to the model that uses permissions.
@@ -483,7 +507,7 @@ $granted = $permissions->permissions_granted;
 $denied = $permissions->permissions_denied;
 ```
 
-> **Warning**
+> [!WARNING]
 > 
 > It's not recommended to make changes directly on database won't propagate to the cache, so you may want to [flush the cache](https://laravel.com/docs/10.x/cache#removing-items-from-the-cache) if you make any change as last resort.
 
@@ -500,6 +524,58 @@ use App\Models\Customer;
 Permission::resolveRelationUsing('customer', function (Permission $model) {
     return $model->morphTo(Customer::class, Permission::MORPH_NAME);
 });
+```
+
+## Refreshing permission data
+
+If you decide to meddle int the permission data directly, you will find yourself with the permission cache being out of sync from the database data.
+
+To refresh that data, use the `refreshPermissions()` method from the user.
+
+```php
+$user = User::find(1);
+
+$user->refreshPermissions();
+```
+
+Alternatively, you may also use the `permissions:refresh` artisan command. You only need the ID of the user in your database, and the team if any. If you're not using the default `App\Models\User` model, you may set the model using the `--model` option.
+
+```shell
+php artisan permissions:refresh 84 --team=coders --model=App\Models\Developers
+```
+
+## Blade Directive
+
+This library comes with the `@granted` and `@denied` [Blade directive](https://laravel.com/docs/11.x/blade#custom-if-statements). You can use it in your Blade views to check if the authenticated user has **at least one** of the given permissions.
+
+```bladehtml
+@granted('complete orders')
+  <button type="submit">Complete order</button>
+@endgranted
+
+@denied(['see orders', 'manage inventory'])
+  <a href="/orders">See all orders and their inventory levels</a>
+@enddenied
+```
+
+> [!TIP]
+> 
+> If the user is not authenticated, the permission always fails. No need to wrap this in a `@auth` directive.
+
+You may also set the [team](#roles-for-teams), if the user belongs to one.
+
+```bladehtml
+@granted('admins', ['see orders', 'manage inventory'])
+  <a href="/orders">See all orders and their inventory levels</a>
+@endgranted
+```
+
+The directive also supports `@unless` and `@else` sub-directives, so you can chain anything you need in your view.
+
+```bladehtml
+@unlessgranted('see orders')
+  <!-- The user doesn't have the "see orders" permission --> 
+@endgranted
 ```
 
 ## Configuration
@@ -542,9 +618,9 @@ By default, if the store is `null` or empty, it will use the application default
 
 The `lock` manages how much time the lock should be acquired, and waited for. All authorization operations are atomic, which avoids data races when they happen.
 
-## [Migration Configuration](https://github.com/sponsors/DarkGhostHunter/sponsorships?sponsor=DarkGhostHunter&tier_id=303801)
+## [Migration Configuration](MIGRATIONS.md)
 
-## [Upgrading](https://github.com/sponsors/DarkGhostHunter/sponsorships?sponsor=DarkGhostHunter&tier_id=303801)
+## [Upgrading](UPGRADING.md)
 
 ## Laravel Octane compatibility
 
