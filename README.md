@@ -20,8 +20,8 @@ if ($user->role('editor', 'admin')->isGranted()) {
 
 ## Requirements
 
-* PHP 8.1 or later
-* Laravel 10 or later
+* PHP 8.2 or later
+* Laravel 11 or later
 * Cache compatible with [Atomic Locks](https://laravel.com/docs/10.x/cache#atomic-locks) (`file`, `redis`, `database`, `array`...)
 
 ## Installation
@@ -49,7 +49,7 @@ composer require laragear/permissions
 
 You will be prompted for a personal access token. If you don't have one, follow the instructions or [create one here](https://github.com/settings/tokens/new?scopes=repo). It takes just seconds.
 
-> [!NOTE]
+> [!INFO]
 > 
 > You can find more information about in [this article](https://darkghosthunter.medium.com/php-use-your-private-repository-in-composer-without-ssh-keys-da9541439f59).
 
@@ -103,7 +103,7 @@ class User extends Authenticatable
 
 After you install Laragear Permissions, you will have one file called `roles/roles.php` in your application. Here you can define **roles**, each one with a set of named **permissions**.
 
-Let's set an example and commence with an online shop, operated by 3 people: Melissa who processes orders, Pedro who manages the inventory, and myself who manages the finances.
+Let's set an example and commence with an online shop, operated by 3 people: Melissa who processes orders, Pedro who manages the inventory, and John who manages the finances.
 
 To create a role we can use the convenient `Role` facade. After we set a name, we will use the `can()` method with an array of permissions related to the Role.
 
@@ -123,7 +123,7 @@ Role::name('inventory clerk')->can([
 ]);
 ```
 
-For my own role, I need access to everything. Instead of writing all the permissions in one single array, we can create a new based on a mix of other roles' permissions, and add a new permission on top.
+John's role requires access to everything. Instead of writing all the permissions in one single array, we can create a new based on a mix of other roles' permissions, and add a new permission on top.
 
 ```php
 use Laragear\Permissions\Facades\Role;
@@ -137,13 +137,18 @@ Role::name('inventory clerk')->can([
 ]);
 
 // Create a new role based on the other two roles.
-Role::name('manager')->basedOn('cashier', 'inventory clerk')->can('see finances');
+Role::name('manager')
+    ->basedOn('cashier', 'inventory clerk')
+    ->can('see finances');
 ```
 
-If there is a permission that I don't need, I can use the `except()` method to filter out the permissions specified.
+If there is a permission John doesn't need, the `except()` method can filter out the permissions specified.
 
 ```php
-Role::name('manager')->from('cashier', 'inventory clerk')->can('see finances')->except('complete orders');
+Role::name('manager')
+    ->from('cashier', 'inventory clerk')
+    ->can('see finances')
+    ->except('complete orders');
 ```
 
 And that is the crash course on roles and permissions.
@@ -546,7 +551,7 @@ php artisan permissions:refresh 84 --team=coders --model=App\Models\Developers
 
 ## Blade Directive
 
-This library comes with the `@granted` and `@denied` [Blade directive](https://laravel.com/docs/11.x/blade#custom-if-statements). You can use it in your Blade views to check if the authenticated user has **at least one** of the given permissions.
+This library comes with the `@granted` and `@denied` [Blade directives](https://laravel.com/docs/11.x/blade#custom-if-statements). You can use them in your Blade views to check if the authenticated user has **at least one** of the given permissions.
 
 ```bladehtml
 @granted('complete orders')
@@ -618,7 +623,7 @@ By default, if the store is `null` or empty, it will use the application default
 
 The `lock` manages how much time the lock should be acquired, and waited for. All authorization operations are atomic, which avoids data races when they happen.
 
-## [Migration Configuration](MIGRATIONS.md)
+## [Migration Configuration](DATABASE.md)
 
 ## [Upgrading](UPGRADING.md)
 
@@ -633,10 +638,10 @@ There should be no problems using this package with Laravel Octane.
 
 ## Security
 
-If you discover any security related issues, please email darkghosthunter@gmail.com instead of using the issue tracker.
+If you discover any security related issues, please [the online form](https://github.com/Laragear/Permissions/security).
 
 # License
 
 This specific package version is licensed under the terms of the [MIT License](LICENSE.md), at time of publishing.
 
-[Laravel](https://laravel.com) is a Trademark of [Taylor Otwell](https://github.com/TaylorOtwell/). Copyright © 2011-2024 Laravel LLC.
+[Laravel](https://laravel.com) is a Trademark of [Taylor Otwell](https://github.com/TaylorOtwell/). Copyright © 2011-2025 Laravel LLC.
