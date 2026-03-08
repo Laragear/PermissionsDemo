@@ -20,9 +20,9 @@ if ($user->role('editor', 'admin')->isGranted()) {
 
 ## Requirements
 
-* PHP 8.2 or later
-* Laravel 11 or later
-* Cache compatible with [Atomic Locks](https://laravel.com/docs/10.x/cache#atomic-locks) (`file`, `redis`, `database`, `array`...)
+* PHP 8.3 or later
+* Laravel 12 or later
+* Cache compatible with [Atomic Locks](https://laravel.com/docs/13.x/cache#atomic-locks) (`file`, `redis`, `database`, `array`...)
 
 ## Installation
 
@@ -638,10 +638,10 @@ There should be no problems using this package with Laravel Octane.
 
 ## Security
 
-If you discover any security related issues, please [the online form](https://github.com/Laragear/Permissions/security).
+If you discover any security-related issues, please [the online form](https://github.com/Laragear/Permissions/security).
 
 # License
 
-This specific package version is licensed under the terms of the [MIT License](LICENSE.md), at time of publishing.
+This specific package version is licensed under the terms of the [MIT License](LICENSE.md), at the time of publishing.
 
-[Laravel](https://laravel.com) is a Trademark of [Taylor Otwell](https://github.com/TaylorOtwell/). Copyright © 2011-2025 Laravel LLC.
+[Laravel](https://laravel.com) is a Trademark of [Taylor Otwell](https://github.com/TaylorOtwell/). Copyright © 2011–2026 Laravel LLC.
